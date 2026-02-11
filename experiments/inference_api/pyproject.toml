@@ -1,7 +1,7 @@
 [project]
-name = "latent-assets"
+name = "inference-api"
 version = "0.1.0"
-description = "Images, embeddings and search."
+description = "Inference API"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [

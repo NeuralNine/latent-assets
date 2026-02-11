@@ -1,0 +1,11 @@
+[project]
+name = "qdrant-store"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "qdrant-client>=1.16.2",
+    "requests>=2.32.5",
+    "torchvision>=0.25.0",
+]
