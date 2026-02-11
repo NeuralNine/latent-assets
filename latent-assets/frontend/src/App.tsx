@@ -21,6 +21,12 @@ function App() {
     }
   };
 
+  const copyImageToClipboard = async (url: string) => {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
+  };
+
   const handleQuery = async () => {
     if (!queryText.trim()) return;
 
@@ -51,6 +57,7 @@ function App() {
           placeholder="Search text"
           value={queryText}
           onChange={(e) => setQueryText(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleQuery()}
           style={{ width: "300px" }}
         />
         <input
@@ -70,7 +77,8 @@ function App() {
                 key={i}
                 src={`http://localhost:8000/assets/${path.split("/").pop()}`}
                 alt={path}
-                style={{ maxWidth: "200px", maxHeight: "200px", objectFit: "contain" }}
+                onClick={() => copyImageToClipboard(`http://localhost:8000/assets/${path.split("/").pop()}`)}
+                style={{ maxWidth: "200px", maxHeight: "200px", objectFit: "contain", cursor: "pointer" }}
               />
             ))}
           </div>
