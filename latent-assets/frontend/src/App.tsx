@@ -39,52 +39,72 @@ function App() {
   };
 
   return (
-    <>
-      <h1>Latent Assets</h1>
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 p-8">
+      <div className="max-w-3xl mx-auto space-y-10">
+        <h1 className="text-4xl font-bold tracking-tight">Latent Assets</h1>
 
-      <section>
-        <h2>Add Images</h2>
-        <input type="file" accept="image/*" multiple ref={fileInputRef} />
-        <br />
-        <button onClick={handleAddImages}>Upload</button>
-        {addStatus && <p>{addStatus}</p>}
-      </section>
-
-      <section>
-        <h2>Query</h2>
-        <input
-          type="text"
-          placeholder="Search text"
-          value={queryText}
-          onChange={(e) => setQueryText(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleQuery()}
-          style={{ width: "300px" }}
-        />
-        <input
-          type="number"
-          min={1}
-          value={topK}
-          onChange={(e) => setTopK(Number(e.target.value))}
-          style={{ width: "60px", marginLeft: "0.5rem" }}
-        />
-        <button onClick={handleQuery} style={{ marginLeft: "0.5rem" }}>
-          Search
-        </button>
-        {results.length > 0 && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", marginTop: "1rem" }}>
-            {results.map((path, i) => (
-              <img
-                key={i}
-                src={`http://localhost:8000/assets/${path.split("/").pop()}`}
-                alt={path}
-                onClick={() => copyImageToClipboard(`http://localhost:8000/assets/${path.split("/").pop()}`)}
-                style={{ maxWidth: "200px", maxHeight: "200px", objectFit: "contain", cursor: "pointer" }}
-              />
-            ))}
+        <section className="space-y-3">
+          <h2 className="text-xl font-semibold text-zinc-300">Add Images</h2>
+          <div className="flex items-center gap-3">
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              ref={fileInputRef}
+              className="text-sm file:mr-3 file:px-4 file:py-2 file:rounded-md file:border-0 file:bg-zinc-800 file:text-zinc-200 file:cursor-pointer hover:file:bg-zinc-700"
+            />
+            <button
+              onClick={handleAddImages}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-md font-medium transition-colors"
+            >
+              Upload
+            </button>
           </div>
-        )}
-      </section>
-    </>
+          {addStatus && <p className="text-sm text-zinc-400">{addStatus}</p>}
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-xl font-semibold text-zinc-300">Query</h2>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              placeholder="Search text"
+              value={queryText}
+              onChange={(e) => setQueryText(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleQuery()}
+              className="flex-1 px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
+            />
+            <input
+              type="number"
+              min={1}
+              value={topK}
+              onChange={(e) => setTopK(Number(e.target.value))}
+              className="w-16 px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md text-center focus:outline-none focus:border-indigo-500"
+            />
+            <button
+              onClick={handleQuery}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-md font-medium transition-colors"
+            >
+              Search
+            </button>
+          </div>
+
+          {results.length > 0 && (
+            <div className="flex flex-wrap gap-3 mt-4">
+              {results.map((path, i) => (
+                <img
+                  key={i}
+                  src={`http://localhost:8000/assets/${path.split("/").pop()}`}
+                  alt={path}
+                  onClick={() => copyImageToClipboard(`http://localhost:8000/assets/${path.split("/").pop()}`)}
+                  className="max-w-[200px] max-h-[200px] object-contain rounded-lg border border-zinc-800 cursor-pointer hover:border-indigo-500 transition-colors"
+                />
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+    </div>
   );
 }
 
