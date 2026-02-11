@@ -1,0 +1,5 @@
+assets_directory: ./assets
+vector_store_directory: ./vector_store
+embedding_endpoint: http://localhost:9999
+collection_name: image_assets
+embedding_dimension: 512
