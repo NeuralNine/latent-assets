@@ -53,5 +53,5 @@ async def add_images(files: list[UploadFile], tags: str = Form("")):
 @app.post("/query", response_model=QueryResponse)
 def query_images(request: QueryRequest):
     query_embedding = embed_text(request.text)
-    paths = search(qdrant_client, query_embedding, request.top_k, request.tags)
+    paths = search(qdrant_client, query_embedding, request.top_k, request.text)
     return QueryResponse(paths=paths)

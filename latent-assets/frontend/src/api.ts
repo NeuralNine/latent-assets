@@ -15,11 +15,11 @@ export async function addImages(files: FileList, tags: string): Promise<{ added:
   return response.json();
 }
 
-export async function queryImages(text: string, topK: number, tags: string[]): Promise<{ paths: string[] }> {
+export async function queryImages(text: string, topK: number): Promise<{ paths: string[] }> {
   const response = await fetch(`${BASE_URL}/query`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text, top_k: topK, tags }),
+    body: JSON.stringify({ text, top_k: topK }),
   });
   if (!response.ok) throw new Error(await response.text());
   return response.json();

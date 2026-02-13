@@ -8,7 +8,6 @@ class AddImagesResponse(BaseModel):
 class QueryRequest(BaseModel):
     text: str
     top_k: int = 5
-    tags: list[str] = []
 
 
 class QueryResponse(BaseModel):

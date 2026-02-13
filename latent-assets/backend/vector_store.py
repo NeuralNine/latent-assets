@@ -1,5 +1,5 @@
 from qdrant_client import QdrantClient
-from qdrant_client.models import VectorParams, Distance, PointStruct, Filter, FieldCondition, MatchAny
+from qdrant_client.models import VectorParams, Distance, PointStruct, Filter, FieldCondition, MatchValue
 
 from config import VECTOR_STORE_DIRECTORY, COLLECTION_NAME, EMBEDDING_DIMENSION
 
@@ -31,17 +31,20 @@ def add_points(client: QdrantClient, embeddings: list[list[float]], paths: list[
     client.upsert(collection_name=COLLECTION_NAME, points=points)
 
 
-def search(client: QdrantClient, query_embedding: list[float], top_k: int, tags: list[str] = []) -> list[str]:
-    query_filter = None
-    if tags:
-        query_filter = Filter(must=[
-            FieldCondition(key="tags", match=MatchAny(any=tags))
-        ])
+def search(client: QdrantClient, query_embedding: list[float], top_k: int, query: str = "") -> list[str]:
+    tag_filter = Filter(must=[FieldCondition(key="tags", match=MatchValue(value=query))])
+    tag_results = client.query_points(collection_name=COLLECTION_NAME, query=query_embedding, query_filter=tag_filter, limit=top_k)
+    paths = [p.payload["path"] for p in tag_results.points]
 
-    results = client.query_points(
-        collection_name=COLLECTION_NAME,
-        query=query_embedding,
-        query_filter=query_filter,
-        limit=top_k,
-    )
-    return [point.payload["path"] for point in results.points]
+    if len(paths) < top_k:
+        seen = set(paths)
+        general_results = client.query_points(collection_name=COLLECTION_NAME, query=query_embedding, limit=top_k + len(seen))
+
+        for p in general_results.points:
+            if p.payload["path"] not in seen:
+                paths.append(p.payload["path"])
+
+                if len(paths) == top_k:
+                    break
+
+    return paths

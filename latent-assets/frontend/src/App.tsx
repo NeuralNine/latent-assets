@@ -7,7 +7,6 @@ function App() {
   const [addStatus, setAddStatus] = useState("");
 
   const [queryText, setQueryText] = useState("");
-  const [queryTags, setQueryTags] = useState("");
   const [topK, setTopK] = useState(5);
   const [results, setResults] = useState<string[]>([]);
 
@@ -33,8 +32,7 @@ function App() {
     if (!queryText.trim()) return;
 
     try {
-      const tagList = queryTags.split(",").map(t => t.trim()).filter(Boolean);
-      const response = await queryImages(queryText, topK, tagList);
+      const response = await queryImages(queryText, topK);
       setResults(response.paths);
     } catch (e) {
       setResults([`Error: ${e}`]);
@@ -83,14 +81,6 @@ function App() {
               onChange={(e) => setQueryText(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleQuery()}
               className="flex-1 px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
-            />
-            <input
-              type="text"
-              placeholder="Filter tags"
-              value={queryTags}
-              onChange={(e) => setQueryTags(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleQuery()}
-              className="w-40 px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
             />
             <input
               type="number"
