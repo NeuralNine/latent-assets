@@ -6,7 +6,7 @@ Managing assets like images with the help of embeddings and vector stores.
 **Embedding Server**
 ```bash
 cd experiments/inference_api
-uvicorn fastapi_server:app --port 9999
+uv run fastapi dev fastapi_server.py --port 9999
 ```
 
 **Backend**
