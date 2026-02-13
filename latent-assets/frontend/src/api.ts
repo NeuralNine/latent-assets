@@ -1,6 +1,6 @@
 const BASE_URL = "http://localhost:8000";
 
-export async function addImages(files: FileList, tags: string): Promise<{ added: number }> {
+export async function addImages(files: FileList, tags: string): Promise<{ added: number; skipped: number }> {
   const formData = new FormData();
   for (const file of files) {
     formData.append("files", file);

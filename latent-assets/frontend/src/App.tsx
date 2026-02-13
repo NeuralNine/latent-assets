@@ -18,7 +18,9 @@ function App() {
     try {
       const allTags = tagInput.trim() ? [...tags, tagInput.trim()] : tags;
       const response = await addImages(files, allTags.join(","));
-      setAddStatus(`Added ${response.added} images`);
+      const parts = [`Added ${response.added} images`];
+      if (response.skipped) parts.push(`(${response.skipped} duplicate${response.skipped > 1 ? "s" : ""} skipped)`);
+      setAddStatus(parts.join(" "));
     } catch (e) {
       setAddStatus(`Error: ${e}`);
     }
@@ -43,7 +45,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 p-8">
-      <div className="max-w-3xl mx-auto space-y-10">
+      <div className="max-w-5xl mx-auto space-y-10">
         <h1 className="text-4xl font-bold tracking-tight">Latent Assets</h1>
 
         <section className="space-y-3">
@@ -133,7 +135,7 @@ function App() {
                   src={`http://localhost:8000/assets/${path.split("/").pop()}`}
                   alt={path}
                   onClick={() => copyImageToClipboard(`http://localhost:8000/assets/${path.split("/").pop()}`)}
-                  className="max-w-[200px] max-h-[200px] object-contain rounded-lg border border-zinc-800 cursor-pointer hover:border-indigo-500 transition-colors"
+                  className="max-w-[160px] max-h-[160px] object-contain rounded-lg border border-zinc-800 cursor-pointer hover:border-indigo-500 transition-colors"
                 />
               ))}
             </div>

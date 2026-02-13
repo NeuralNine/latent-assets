@@ -1,3 +1,4 @@
+import hashlib
 import os
 from contextlib import asynccontextmanager
 
@@ -8,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from config import ASSETS_DIRECTORY
 from embedding import embed_image, embed_text
 from schemas import AddImagesResponse, QueryRequest, QueryResponse
-from vector_store import get_client, ensure_collection, add_points, search
+from vector_store import get_client, ensure_collection, add_points, hash_exists, search
 
 
 qdrant_client = None
@@ -33,10 +34,17 @@ app.mount("/assets", StaticFiles(directory=ASSETS_DIRECTORY), name="assets")
 async def add_images(files: list[UploadFile], tags: str = Form("")):
     paths = []
     embeddings = []
+    hashes = []
+    skipped = 0
     tag_list = [t.strip() for t in tags.split(",") if t.strip()]
 
     for file in files:
         data = await file.read()
+        file_hash = hashlib.sha256(data).hexdigest()
+
+        if hash_exists(qdrant_client, file_hash):
+            skipped += 1
+            continue
 
         save_path = os.path.join(ASSETS_DIRECTORY, file.filename)
         with open(save_path, "wb") as f:
@@ -44,10 +52,12 @@ async def add_images(files: list[UploadFile], tags: str = Form("")):
 
         embeddings.append(embed_image(file.filename, data))
         paths.append(save_path)
+        hashes.append(file_hash)
 
-    add_points(qdrant_client, embeddings, paths, tag_list)
+    if paths:
+        add_points(qdrant_client, embeddings, paths, hashes, tag_list)
 
-    return AddImagesResponse(added=len(paths))
+    return AddImagesResponse(added=len(paths), skipped=skipped)
 
 
 @app.post("/query", response_model=QueryResponse)

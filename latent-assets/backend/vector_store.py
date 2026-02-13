@@ -1,5 +1,5 @@
 from qdrant_client import QdrantClient
-from qdrant_client.models import VectorParams, Distance, PointStruct, Filter, FieldCondition, MatchValue
+from qdrant_client.models import VectorParams, Distance, PointStruct, Filter, FieldCondition, MatchValue, ScrollRequest
 
 from config import VECTOR_STORE_DIRECTORY, COLLECTION_NAME, EMBEDDING_DIMENSION
 
@@ -22,10 +22,19 @@ def get_next_id(client: QdrantClient) -> int:
     return collection_info.points_count
 
 
-def add_points(client: QdrantClient, embeddings: list[list[float]], paths: list[str], tags: list[str] = []):
+def hash_exists(client: QdrantClient, file_hash: str) -> bool:
+    results = client.scroll(
+        collection_name=COLLECTION_NAME,
+        scroll_filter=Filter(must=[FieldCondition(key="hash", match=MatchValue(value=file_hash))]),
+        limit=1,
+    )
+    return len(results[0]) > 0
+
+
+def add_points(client: QdrantClient, embeddings: list[list[float]], paths: list[str], hashes: list[str], tags: list[str] = []):
     start_id = get_next_id(client)
     points = [
-        PointStruct(id=start_id + i, vector=embeddings[i], payload={"path": paths[i], "tags": tags})
+        PointStruct(id=start_id + i, vector=embeddings[i], payload={"path": paths[i], "tags": tags, "hash": hashes[i]})
         for i in range(len(embeddings))
     ]
     client.upsert(collection_name=COLLECTION_NAME, points=points)
