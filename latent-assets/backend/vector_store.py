@@ -1,5 +1,5 @@
 from qdrant_client import QdrantClient
-from qdrant_client.models import VectorParams, Distance, PointStruct
+from qdrant_client.models import VectorParams, Distance, PointStruct, Filter, FieldCondition, MatchAny
 
 from config import VECTOR_STORE_DIRECTORY, COLLECTION_NAME, EMBEDDING_DIMENSION
 
@@ -22,19 +22,26 @@ def get_next_id(client: QdrantClient) -> int:
     return collection_info.points_count
 
 
-def add_points(client: QdrantClient, embeddings: list[list[float]], paths: list[str]):
+def add_points(client: QdrantClient, embeddings: list[list[float]], paths: list[str], tags: list[str] = []):
     start_id = get_next_id(client)
     points = [
-        PointStruct(id=start_id + i, vector=embeddings[i], payload={"path": paths[i]})
+        PointStruct(id=start_id + i, vector=embeddings[i], payload={"path": paths[i], "tags": tags})
         for i in range(len(embeddings))
     ]
     client.upsert(collection_name=COLLECTION_NAME, points=points)
 
 
-def search(client: QdrantClient, query_embedding: list[float], top_k: int) -> list[str]:
+def search(client: QdrantClient, query_embedding: list[float], top_k: int, tags: list[str] = []) -> list[str]:
+    query_filter = None
+    if tags:
+        query_filter = Filter(must=[
+            FieldCondition(key="tags", match=MatchAny(any=tags))
+        ])
+
     results = client.query_points(
         collection_name=COLLECTION_NAME,
         query=query_embedding,
+        query_filter=query_filter,
         limit=top_k,
     )
     return [point.payload["path"] for point in results.points]

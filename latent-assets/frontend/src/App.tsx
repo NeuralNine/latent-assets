@@ -3,9 +3,11 @@ import { addImages, queryImages } from "./api";
 
 function App() {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadTags, setUploadTags] = useState("");
   const [addStatus, setAddStatus] = useState("");
 
   const [queryText, setQueryText] = useState("");
+  const [queryTags, setQueryTags] = useState("");
   const [topK, setTopK] = useState(5);
   const [results, setResults] = useState<string[]>([]);
 
@@ -14,7 +16,7 @@ function App() {
     if (!files || files.length === 0) return;
 
     try {
-      const response = await addImages(files);
+      const response = await addImages(files, uploadTags);
       setAddStatus(`Added ${response.added} images`);
     } catch (e) {
       setAddStatus(`Error: ${e}`);
@@ -31,7 +33,8 @@ function App() {
     if (!queryText.trim()) return;
 
     try {
-      const response = await queryImages(queryText, topK);
+      const tagList = queryTags.split(",").map(t => t.trim()).filter(Boolean);
+      const response = await queryImages(queryText, topK, tagList);
       setResults(response.paths);
     } catch (e) {
       setResults([`Error: ${e}`]);
@@ -53,6 +56,13 @@ function App() {
               ref={fileInputRef}
               className="text-sm file:mr-3 file:px-4 file:py-2 file:rounded-md file:border-0 file:bg-zinc-800 file:text-zinc-200 file:cursor-pointer hover:file:bg-zinc-700"
             />
+            <input
+              type="text"
+              placeholder="Tags (comma-separated)"
+              value={uploadTags}
+              onChange={(e) => setUploadTags(e.target.value)}
+              className="px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
+            />
             <button
               onClick={handleAddImages}
               className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-md font-medium transition-colors"
@@ -73,6 +83,14 @@ function App() {
               onChange={(e) => setQueryText(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleQuery()}
               className="flex-1 px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
+            />
+            <input
+              type="text"
+              placeholder="Filter tags"
+              value={queryTags}
+              onChange={(e) => setQueryTags(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleQuery()}
+              className="w-40 px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
             />
             <input
               type="number"

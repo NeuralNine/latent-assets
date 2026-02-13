@@ -1,7 +1,7 @@
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, UploadFile
+from fastapi import FastAPI, Form, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -30,9 +30,10 @@ app.mount("/assets", StaticFiles(directory=ASSETS_DIRECTORY), name="assets")
 
 
 @app.post("/images", response_model=AddImagesResponse)
-async def add_images(files: list[UploadFile]):
+async def add_images(files: list[UploadFile], tags: str = Form("")):
     paths = []
     embeddings = []
+    tag_list = [t.strip() for t in tags.split(",") if t.strip()]
 
     for file in files:
         data = await file.read()
@@ -44,7 +45,7 @@ async def add_images(files: list[UploadFile]):
         embeddings.append(embed_image(file.filename, data))
         paths.append(save_path)
 
-    add_points(qdrant_client, embeddings, paths)
+    add_points(qdrant_client, embeddings, paths, tag_list)
 
     return AddImagesResponse(added=len(paths))
 
@@ -52,5 +53,5 @@ async def add_images(files: list[UploadFile]):
 @app.post("/query", response_model=QueryResponse)
 def query_images(request: QueryRequest):
     query_embedding = embed_text(request.text)
-    paths = search(qdrant_client, query_embedding, request.top_k)
+    paths = search(qdrant_client, query_embedding, request.top_k, request.tags)
     return QueryResponse(paths=paths)
