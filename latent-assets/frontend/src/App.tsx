@@ -3,7 +3,8 @@ import { addImages, queryImages } from "./api";
 
 function App() {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadTags, setUploadTags] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
   const [addStatus, setAddStatus] = useState("");
 
   const [queryText, setQueryText] = useState("");
@@ -15,7 +16,8 @@ function App() {
     if (!files || files.length === 0) return;
 
     try {
-      const response = await addImages(files, uploadTags);
+      const allTags = tagInput.trim() ? [...tags, tagInput.trim()] : tags;
+      const response = await addImages(files, allTags.join(","));
       setAddStatus(`Added ${response.added} images`);
     } catch (e) {
       setAddStatus(`Error: ${e}`);
@@ -54,13 +56,35 @@ function App() {
               ref={fileInputRef}
               className="text-sm file:mr-3 file:px-4 file:py-2 file:rounded-md file:border-0 file:bg-zinc-800 file:text-zinc-200 file:cursor-pointer hover:file:bg-zinc-700"
             />
-            <input
-              type="text"
-              placeholder="Tags (comma-separated)"
-              value={uploadTags}
-              onChange={(e) => setUploadTags(e.target.value)}
-              className="px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
-            />
+            <div className="flex flex-wrap items-center gap-1.5 px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md focus-within:border-indigo-500">
+              {tags.map((tag, i) => (
+                <span key={i} className="px-2 py-0.5 bg-zinc-700 text-zinc-200 text-sm rounded">
+                  {tag}
+                </span>
+              ))}
+              <input
+                type="text"
+                placeholder={tags.length === 0 ? "Tags" : ""}
+                value={tagInput}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val.includes(",")) {
+                    const tag = val.replace(",", "").trim();
+                    if (tag) setTags([...tags, tag]);
+                    setTagInput("");
+                  } else {
+                    setTagInput(val);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Backspace" && tagInput === "" && tags.length > 0) {
+                    setTagInput(tags[tags.length - 1]);
+                    setTags(tags.slice(0, -1));
+                  }
+                }}
+                className="bg-transparent outline-none placeholder-zinc-500 text-sm min-w-[60px] flex-1"
+              />
+            </div>
             <button
               onClick={handleAddImages}
               className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-md font-medium transition-colors"
@@ -82,13 +106,17 @@ function App() {
               onKeyDown={(e) => e.key === "Enter" && handleQuery()}
               className="flex-1 px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
             />
-            <input
-              type="number"
-              min={1}
-              value={topK}
-              onChange={(e) => setTopK(Number(e.target.value))}
-              className="w-16 px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md text-center focus:outline-none focus:border-indigo-500"
-            />
+            <div className="flex items-center bg-zinc-900 border border-zinc-700 rounded-md overflow-hidden">
+              <button onClick={() => setTopK(Math.max(1, topK - 1))} className="px-2 py-2 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors">&minus;</button>
+              <input
+                type="number"
+                min={1}
+                value={topK}
+                onChange={(e) => setTopK(Math.max(1, Number(e.target.value)))}
+                className="w-10 py-2 bg-transparent text-center focus:outline-none"
+              />
+              <button onClick={() => setTopK(topK + 1)} className="px-2 py-2 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors">+</button>
+            </div>
             <button
               onClick={handleQuery}
               className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-md font-medium transition-colors"
