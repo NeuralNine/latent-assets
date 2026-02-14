@@ -15,7 +15,27 @@ export async function addImages(files: FileList, tags: string): Promise<{ added:
   return response.json();
 }
 
-export async function queryImages(text: string, topK: number): Promise<{ paths: string[] }> {
+export async function deleteImage(path: string): Promise<void> {
+  const response = await fetch(`${BASE_URL}/delete`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ path }),
+  });
+  if (!response.ok) throw new Error(await response.text());
+}
+
+export async function updateTags(path: string, tags: string[]): Promise<void> {
+  const response = await fetch(`${BASE_URL}/tags`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ path, tags }),
+  });
+  if (!response.ok) throw new Error(await response.text());
+}
+
+export type ImageResult = { path: string; tags: string[]; tag_match: boolean };
+
+export async function queryImages(text: string, topK: number): Promise<{ results: ImageResult[] }> {
   const response = await fetch(`${BASE_URL}/query`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

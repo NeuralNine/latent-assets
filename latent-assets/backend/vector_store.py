@@ -40,20 +40,41 @@ def add_points(client: QdrantClient, embeddings: list[list[float]], paths: list[
     client.upsert(collection_name=COLLECTION_NAME, points=points)
 
 
-def search(client: QdrantClient, query_embedding: list[float], top_k: int, query: str = "") -> list[str]:
+def delete_by_path(client: QdrantClient, path: str):
+    client.delete(
+        collection_name=COLLECTION_NAME,
+        points_selector=Filter(must=[FieldCondition(key="path", match=MatchValue(value=path))]),
+    )
+
+
+def update_tags(client: QdrantClient, path: str, tags: list[str]):
+    points, _ = client.scroll(
+        collection_name=COLLECTION_NAME,
+        scroll_filter=Filter(must=[FieldCondition(key="path", match=MatchValue(value=path))]),
+        limit=1,
+    )
+    if points:
+        client.set_payload(
+            collection_name=COLLECTION_NAME,
+            payload={"tags": tags},
+            points=[points[0].id],
+        )
+
+
+def search(client: QdrantClient, query_embedding: list[float], top_k: int, query: str = "") -> list[dict]:
     tag_filter = Filter(must=[FieldCondition(key="tags", match=MatchValue(value=query))])
     tag_results = client.query_points(collection_name=COLLECTION_NAME, query=query_embedding, query_filter=tag_filter, limit=top_k)
-    paths = [p.payload["path"] for p in tag_results.points]
+    results = [{"path": p.payload["path"], "tags": p.payload.get("tags", []), "tag_match": True} for p in tag_results.points]
 
-    if len(paths) < top_k:
-        seen = set(paths)
+    if len(results) < top_k:
+        seen = {r["path"] for r in results}
         general_results = client.query_points(collection_name=COLLECTION_NAME, query=query_embedding, limit=top_k + len(seen))
 
         for p in general_results.points:
             if p.payload["path"] not in seen:
-                paths.append(p.payload["path"])
+                results.append({"path": p.payload["path"], "tags": p.payload.get("tags", []), "tag_match": False})
 
-                if len(paths) == top_k:
+                if len(results) == top_k:
                     break
 
-    return paths
+    return results
