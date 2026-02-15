@@ -31,10 +31,10 @@ def hash_exists(client: QdrantClient, file_hash: str) -> bool:
     return len(results[0]) > 0
 
 
-def add_points(client: QdrantClient, embeddings: list[list[float]], paths: list[str], hashes: list[str], tags: list[str] = []):
+def add_points(client: QdrantClient, embeddings: list[list[float]], paths: list[str], hashes: list[str], tags_per_image: list[list[str]]):
     start_id = get_next_id(client)
     points = [
-        PointStruct(id=start_id + i, vector=embeddings[i], payload={"path": paths[i], "tags": tags, "hash": hashes[i]})
+        PointStruct(id=start_id + i, vector=embeddings[i], payload={"path": paths[i], "tags": tags_per_image[i], "hash": hashes[i]})
         for i in range(len(embeddings))
     ]
     client.upsert(collection_name=COLLECTION_NAME, points=points)

@@ -1,11 +1,13 @@
 const BASE_URL = "http://localhost:8000";
 
-export async function addImages(files: FileList, tags: string): Promise<{ added: number; skipped: number }> {
+export async function addImages(files: File[], tagsPerFile: string[]): Promise<{ added: number; skipped: number }> {
   const formData = new FormData();
   for (const file of files) {
     formData.append("files", file);
   }
-  formData.append("tags", tags);
+  for (const tags of tagsPerFile) {
+    formData.append("tags", tags);
+  }
 
   const response = await fetch(`${BASE_URL}/images`, {
     method: "POST",

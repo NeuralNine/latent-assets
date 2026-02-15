@@ -33,14 +33,14 @@ def serve_asset(filename: str):
 
 
 @app.post("/images", response_model=AddImagesResponse)
-async def add_images(files: list[UploadFile], tags: str = Form("")):
+async def add_images(files: list[UploadFile], tags: list[str] = Form([])):
     paths = []
     embeddings = []
     hashes = []
+    tags_per_image = []
     skipped = 0
-    tag_list = [t.strip() for t in tags.split(",") if t.strip()]
 
-    for file in files:
+    for i, file in enumerate(files):
         data = await file.read()
         file_hash = hashlib.sha256(data).hexdigest()
 
@@ -55,9 +55,11 @@ async def add_images(files: list[UploadFile], tags: str = Form("")):
         embeddings.append(embed_image(file.filename, data))
         paths.append(save_path)
         hashes.append(file_hash)
+        tag_str = tags[i] if i < len(tags) else ""
+        tags_per_image.append([t.strip() for t in tag_str.split(",") if t.strip()])
 
     if paths:
-        add_points(qdrant_client, embeddings, paths, hashes, tag_list)
+        add_points(qdrant_client, embeddings, paths, hashes, tags_per_image)
 
     return AddImagesResponse(added=len(paths), skipped=skipped)
 

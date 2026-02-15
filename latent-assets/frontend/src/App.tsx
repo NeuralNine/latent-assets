@@ -1,11 +1,13 @@
 import { useRef, useState } from "react";
 import { addImages, deleteImage, queryImages, updateTags, type ImageResult } from "./api";
 
+type UploadItem = { file: File; preview: string; tags: string[]; tagInput: string };
+
 function App() {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [tags, setTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState("");
+  const [uploads, setUploads] = useState<UploadItem[]>([]);
   const [addStatus, setAddStatus] = useState("");
+  const [dragging, setDragging] = useState(false);
 
   const [queryText, setQueryText] = useState("");
   const [topK, setTopK] = useState(5);
@@ -15,16 +17,34 @@ function App() {
   const [editTags, setEditTags] = useState<string[]>([]);
   const [editTagInput, setEditTagInput] = useState("");
 
+  const addFiles = (files: FileList | File[]) => {
+    const imageFiles = Array.from(files).filter((f) => f.type.startsWith("image/"));
+    if (imageFiles.length === 0) return;
+    setUploads((prev) => [
+      ...prev,
+      ...imageFiles.map((f) => ({ file: f, preview: URL.createObjectURL(f), tags: [], tagInput: "" })),
+    ]);
+  };
+
+  const updateUpload = (i: number, patch: Partial<UploadItem>) => {
+    setUploads(uploads.map((u, j) => j === i ? { ...u, ...patch } : u));
+  };
+
   const handleAddImages = async () => {
-    const files = fileInputRef.current?.files;
-    if (!files || files.length === 0) return;
+    if (uploads.length === 0) return;
 
     try {
-      const allTags = tagInput.trim() ? [...tags, tagInput.trim()] : tags;
-      const response = await addImages(files, allTags.join(","));
+      const files = uploads.map((u) => u.file);
+      const tagsPerFile = uploads.map((u) => {
+        const all = u.tagInput.trim() ? [...u.tags, u.tagInput.trim()] : u.tags;
+        return all.join(",");
+      });
+      const response = await addImages(files, tagsPerFile);
       const parts = [`Added ${response.added} images`];
       if (response.skipped) parts.push(`(${response.skipped} duplicate${response.skipped > 1 ? "s" : ""} skipped)`);
       setAddStatus(parts.join(" "));
+      setUploads([]);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (e) {
       setAddStatus(`Error: ${e}`);
     }
@@ -71,55 +91,92 @@ function App() {
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 p-8">
       <div className="max-w-5xl mx-auto space-y-10">
-        <h1 className="text-4xl font-bold tracking-tight">Latent Assets</h1>
+        <h1 className="text-4xl font-bold tracking-tight">&#128269;&#65039; Latent Assets</h1>
 
         <section className="space-y-3">
           <h2 className="text-xl font-semibold text-zinc-300">Add Images</h2>
-          <div className="flex items-center gap-3">
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              ref={fileInputRef}
-              className="text-sm file:mr-3 file:px-4 file:py-2 file:rounded-md file:border-0 file:bg-zinc-800 file:text-zinc-200 file:cursor-pointer hover:file:bg-zinc-700"
-            />
-            <div className="flex flex-wrap items-center gap-1.5 px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md focus-within:border-indigo-500">
-              {tags.map((tag, i) => (
-                <span key={i} className="px-2 py-0.5 bg-zinc-700 text-zinc-200 text-sm rounded">
-                  {tag}
-                </span>
-              ))}
-              <input
-                type="text"
-                placeholder={tags.length === 0 ? "Tags" : ""}
-                value={tagInput}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (val.includes(",")) {
-                    const tag = val.replace(",", "").trim();
-                    if (tag) setTags([...tags, tag]);
-                    setTagInput("");
-                  } else {
-                    setTagInput(val);
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Backspace" && tagInput === "" && tags.length > 0) {
-                    e.preventDefault();
-                    setTagInput(tags[tags.length - 1]);
-                    setTags(tags.slice(0, -1));
-                  }
-                }}
-                className="bg-transparent outline-none placeholder-zinc-500 text-sm min-w-[60px] flex-1"
-              />
-            </div>
-            <button
-              onClick={handleAddImages}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-md font-medium transition-colors"
-            >
-              Upload
-            </button>
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            ref={fileInputRef}
+            onChange={() => {
+              const files = fileInputRef.current?.files;
+              if (files) addFiles(files);
+              if (fileInputRef.current) fileInputRef.current.value = "";
+            }}
+            className="hidden"
+          />
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragging(false);
+              addFiles(e.dataTransfer.files);
+            }}
+            className={`flex flex-col items-center justify-center gap-2 w-full py-10 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
+              dragging ? "border-indigo-500 bg-indigo-500/10" : "border-zinc-700 hover:border-zinc-500 bg-zinc-900/50"
+            }`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-500">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+            <p className="text-sm text-zinc-400">Drop images here or <span className="text-indigo-400">browse</span></p>
           </div>
+          {uploads.length > 0 && (
+            <>
+              <div className="flex flex-wrap gap-3">
+                {uploads.map((item, i) => (
+                  <div key={i} className="relative flex flex-col gap-1.5">
+                    <div className="relative">
+                      <img src={item.preview} className="max-w-[120px] max-h-[120px] object-contain rounded-md border border-zinc-800" />
+                      <button
+                        onClick={() => setUploads(uploads.filter((_, j) => j !== i))}
+                        className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-zinc-800 border border-zinc-600 rounded-full text-zinc-400 hover:text-zinc-100 text-xs flex items-center justify-center"
+                      >&times;</button>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1 px-1.5 py-1 bg-zinc-900 border border-zinc-700 rounded-md focus-within:border-indigo-500 max-w-[120px]">
+                      {item.tags.map((tag, ti) => (
+                        <span key={ti} className="px-1.5 py-0 bg-zinc-700 text-zinc-200 text-[11px] rounded">{tag}</span>
+                      ))}
+                      <input
+                        type="text"
+                        placeholder={item.tags.length === 0 ? "Tags" : ""}
+                        value={item.tagInput}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val.includes(",")) {
+                            const tag = val.replace(",", "").trim();
+                            if (tag) updateUpload(i, { tags: [...item.tags, tag], tagInput: "" });
+                            else updateUpload(i, { tagInput: "" });
+                          } else {
+                            updateUpload(i, { tagInput: val });
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Backspace" && item.tagInput === "" && item.tags.length > 0) {
+                            e.preventDefault();
+                            updateUpload(i, { tagInput: item.tags[item.tags.length - 1], tags: item.tags.slice(0, -1) });
+                          }
+                        }}
+                        className="bg-transparent outline-none placeholder-zinc-500 text-[11px] min-w-[40px] flex-1 w-0"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={handleAddImages}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-md font-medium transition-colors"
+              >
+                Upload {uploads.length} image{uploads.length !== 1 ? "s" : ""}
+              </button>
+            </>
+          )}
           {addStatus && <p className="text-sm text-zinc-400">{addStatus}</p>}
         </section>
 
