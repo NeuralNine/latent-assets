@@ -1,3 +1,5 @@
+import uuid
+
 from qdrant_client import QdrantClient
 from qdrant_client.models import VectorParams, Distance, PointStruct, Filter, FieldCondition, MatchValue, ScrollRequest
 
@@ -17,11 +19,6 @@ def ensure_collection(client: QdrantClient):
         )
 
 
-def get_next_id(client: QdrantClient) -> int:
-    collection_info = client.get_collection(COLLECTION_NAME)
-    return collection_info.points_count
-
-
 def hash_exists(client: QdrantClient, file_hash: str) -> bool:
     results = client.scroll(
         collection_name=COLLECTION_NAME,
@@ -32,9 +29,8 @@ def hash_exists(client: QdrantClient, file_hash: str) -> bool:
 
 
 def add_points(client: QdrantClient, embeddings: list[list[float]], paths: list[str], hashes: list[str], tags_per_image: list[list[str]]):
-    start_id = get_next_id(client)
     points = [
-        PointStruct(id=start_id + i, vector=embeddings[i], payload={"path": paths[i], "tags": tags_per_image[i], "hash": hashes[i]})
+        PointStruct(id=str(uuid.uuid4()), vector=embeddings[i], payload={"path": paths[i], "tags": tags_per_image[i], "hash": hashes[i]})
         for i in range(len(embeddings))
     ]
     client.upsert(collection_name=COLLECTION_NAME, points=points)

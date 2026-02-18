@@ -50,10 +50,13 @@ function App() {
     }
   };
 
-  const copyImageToClipboard = async (url: string) => {
-    const response = await fetch(url);
-    const blob = await response.blob();
-    await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
+  const copyImageToClipboard = async (img: HTMLImageElement) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    canvas.getContext("2d")!.drawImage(img, 0, 0);
+    const blob = await new Promise<Blob>((resolve) => canvas.toBlob((b) => resolve(b!), "image/png"));
+    await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
   };
 
   const confirmDelete = async () => {
@@ -218,7 +221,7 @@ function App() {
                     crossOrigin="anonymous"
                     src={`http://localhost:8000/assets/${result.path.split("/").pop()}`}
                     alt={result.path}
-                    onClick={() => copyImageToClipboard(`http://localhost:8000/assets/${result.path.split("/").pop()}`)}
+                    onClick={(e) => copyImageToClipboard(e.currentTarget)}
                     className="max-w-[160px] max-h-[160px] object-contain rounded-lg border border-zinc-800 cursor-pointer hover:border-indigo-500 transition-colors"
                   />
                   <div className="absolute top-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
